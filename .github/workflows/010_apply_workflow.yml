@@ -1,0 +1,68 @@
+name: 'New Terraform Apply'
+on:
+  issue_comment:
+    types:
+      - created
+env:
+  TF_ACTIONS_VERSION: 0.12.28
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+jobs:
+  terraform-apply-job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Load PR details
+        id: pr
+        run: |
+          set -eu
+          resp=$(curl -sSf \
+            --url ${{ github.event.issue.pull_request.url }} \
+            --header 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' \
+            --header 'content-type: application/json')
+          sha=$(jq -r '.merge_commit_sha' <<< "$resp")
+          echo "::set-output name=merge_commit_sha::$sha"
+      - name: Checkout
+        uses: actions/checkout@master
+        with:
+          ref: ${{ steps.pr.outputs.merge_commit_sha }}
+      - uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: ${{ env.TF_ACTIONS_VERSION }}
+      - name: Terraform Init
+        id: init
+        working-directory: demo
+        run: |
+          terraform init -lock-timeout=30s
+      - name: Terraform Apply
+        id: apply
+        working-directory: demo
+        run: |
+          terraform apply -auto-approve -no-color -lock-timeout=30s
+        continue-on-error: true
+      - uses: actions/github-script@0.9.0
+        env:
+          APPLY: "terraform\n${{ steps.apply.outputs.stdout }}"
+          ERROR: "${{ steps.apply.outputs.stderr }}"
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const formatted_apply = process.env.APPLY.replace(/`/g,'\`')
+            const formatted_error = process.env.ERROR.replace(/`/g,'\`')
+            const output = `#### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
+            #### Terraform Apply 📖\`${{ steps.apply.outcome }}\`
+
+            <details><summary>Show Apply</summary>
+
+            \`\`\` ${formatted_apply} ${formatted_error}\`\`\`
+
+            </details>
+
+            *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Working Directory: \`demo\`, Workflow: \`${{ github.workflow }}\`*
+            *run : https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}*`;
+            github.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
