@@ -1,6 +1,8 @@
 name: 'Terraform Plan'
 on:
   push:
+    branches:
+      - 'test-basic-plan-workflow'
 env:
   TF_ACTIONS_VERSION: 0.12.28
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
