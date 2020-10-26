@@ -1,6 +1,6 @@
 name: 'Terraform Plan'
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize]
 env:
   TF_ACTIONS_VERSION: 0.12.28
@@ -11,6 +11,10 @@ jobs:
   terraform-plan-job:
     runs-on: ubuntu-latest
     steps:
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
       - name: Checkout
         uses: actions/checkout@master
       - uses: hashicorp/setup-terraform@v1
