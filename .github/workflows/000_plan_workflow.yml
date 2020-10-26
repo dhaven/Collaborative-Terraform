@@ -32,7 +32,7 @@ jobs:
         run: terraform validate -no-color
       - name: Terraform Plan
         id: plan
-        working-directory: ${{ matrix.file_path }}
+        working-directory: demo
         run: |
           terraform plan -no-color -lock-timeout=30s
         continue-on-error: true
