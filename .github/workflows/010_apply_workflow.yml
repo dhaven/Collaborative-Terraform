@@ -1,8 +1,8 @@
 name: 'New Terraform Apply'
 on:
-  issue_comment:
-    types:
-      - created
+  pull_request_review_comment:
+    types: [created, edited]
+
 env:
   TF_ACTIONS_VERSION: 0.12.28
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -10,22 +10,12 @@ env:
 
 jobs:
   terraform-apply-job:
+    if: >
+      contains(github.event.comment.body, '/apply')
     runs-on: ubuntu-latest
     steps:
-      - name: Load PR details
-        id: pr
-        run: |
-          set -eu
-          resp=$(curl -sSf \
-            --url ${{ github.event.issue.pull_request.url }} \
-            --header 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' \
-            --header 'content-type: application/json')
-          sha=$(jq -r '.merge_commit_sha' <<< "$resp")
-          echo "::set-output name=merge_commit_sha::$sha"
       - name: Checkout
         uses: actions/checkout@master
-        with:
-          ref: ${{ steps.pr.outputs.merge_commit_sha }}
       - uses: hashicorp/setup-terraform@v1
         with:
           terraform_version: ${{ env.TF_ACTIONS_VERSION }}
@@ -33,12 +23,12 @@ jobs:
         id: init
         working-directory: demo
         run: |
-          terraform init -lock-timeout=30s
+          terraform init
       - name: Terraform Apply
         id: apply
         working-directory: demo
         run: |
-          terraform apply -auto-approve -no-color -lock-timeout=30s
+          terraform apply -auto-approve -no-color
         continue-on-error: true
       - uses: actions/github-script@0.9.0
         env:
