@@ -1,3 +1,3 @@
-resource "null_resource" "prod_resource" {
+resource "null_resource" "my_prod_resource" {
 
 }
