@@ -72,3 +72,6 @@ jobs:
               repo: context.repo.repo,
               body: output
             })
+            if(${{steps.plan.outputs.exitcode}}){
+              core.setFailed("There was an error during terraform plan");
+            }
