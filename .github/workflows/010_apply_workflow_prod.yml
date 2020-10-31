@@ -1,0 +1,58 @@
+name: 'Multi-state Terraform Apply Production'
+on:
+  pull_request_review:
+    types: [submitted]
+
+env:
+  TF_ACTIONS_VERSION: 0.12.28
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+jobs:
+  terraform-apply-job:
+    if: >
+      contains(github.event.review.body, '/apply production')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@master
+      - uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: ${{ env.TF_ACTIONS_VERSION }}
+      - name: Terraform Init
+        id: init
+        working-directory: multi-state-demo/environments/production
+        run: |
+          terraform init
+      - name: Terraform Apply
+        id: apply
+        working-directory: multi-state-demo/environments/production
+        run: |
+          terraform apply -auto-approve -no-color
+        continue-on-error: true
+      - uses: actions/github-script@0.9.0
+        env:
+          APPLY: "terraform\n${{ steps.apply.outputs.stdout }}"
+          ERROR: "${{ steps.apply.outputs.stderr }}"
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const formatted_apply = process.env.APPLY.replace(/`/g,'\`')
+            const formatted_error = process.env.ERROR.replace(/`/g,'\`')
+            const output = `#### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
+            #### Terraform Apply 📖\`${{ steps.apply.outcome }}\`
+
+            <details><summary>Show Apply</summary>
+
+            \`\`\` ${formatted_apply} ${formatted_error}\`\`\`
+
+            </details>
+
+            *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Working Directory: \`demo\`, Workflow: \`${{ github.workflow }}\`*
+            *run : https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}*`;
+            github.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
