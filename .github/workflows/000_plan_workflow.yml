@@ -1,4 +1,4 @@
-name: 'Terraform Plan'
+name: 'Simple Terraform Plan'
 on:
   pull_request:
     types: [opened, synchronize]
