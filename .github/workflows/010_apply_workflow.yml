@@ -1,7 +1,7 @@
 name: 'New Terraform Apply'
 on:
-  pull_request_review_comment:
-    types: [created, edited]
+  pull_request_review:
+    types: [submitted]
 
 env:
   TF_ACTIONS_VERSION: 0.12.28
