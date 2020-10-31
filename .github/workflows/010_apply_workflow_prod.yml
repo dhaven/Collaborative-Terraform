@@ -57,5 +57,5 @@ jobs:
               body: output
             })
             if(${{ steps.apply.outputs.exitcode }}){
-              core.setFailed("There was an error during terraform plan");
+              core.setFailed("There was an error during terraform apply");
             }
