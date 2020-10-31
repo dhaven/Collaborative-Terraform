@@ -11,7 +11,7 @@ env:
 jobs:
   terraform-apply-job:
     if: >
-      contains(github.event.comment.body, '/apply')
+      contains(github.event.review.body, '/apply')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
