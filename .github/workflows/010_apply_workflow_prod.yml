@@ -21,12 +21,12 @@ jobs:
           terraform_version: ${{ env.TF_ACTIONS_VERSION }}
       - name: Terraform Init
         id: init
-        working-directory: multi-state-demo/environments/production
+        working-directory: multi-state-demo/environment/production
         run: |
           terraform init
       - name: Terraform Apply
         id: apply
-        working-directory: multi-state-demo/environments/production
+        working-directory: multi-state-demo/environment/production
         run: |
           terraform apply -auto-approve -no-color
         continue-on-error: true
